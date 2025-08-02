@@ -1,0 +1,136 @@
+import { KeyboardAvoidingView, Platform } from 'react-native';
+import { useDispatch } from 'react-redux';
+import { useMutation } from '@apollo/client';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { trigDetailedInfo } from '../../../store/redux/slices/wide-app/layout';
+import { editSecretPoll } from '../../../store/redux/slices/current-poll';
+import ScreenWrapper from '../../../components/screen-wrapper';
+import Styled from './styles';
+import queries from '../queries';
+
+const CreatePoll = () => {
+  // Create poll states
+  const [questionTextInput, setQuestionTextInput] = useState('');
+  const [answerTypeSelected, setAnswerTypeSelected] = useState('TF');
+  const [secretPoll, setSecretPoll] = useState(false);
+  const [isMultipleResponse, setIsMultipleResponse] = useState(false);
+
+  const [createPoll] = useMutation(queries.POLL_CREATE);
+  const { t } = useTranslation();
+  const navigation = useNavigation();
+  const dispatch = useDispatch();
+
+  const handleCreatePoll = async () => {
+    createPoll({
+      variables: {
+        pollType: answerTypeSelected,
+        pollId: `${questionTextInput}/${new Date().getTime()}`,
+        secretPoll,
+        question: questionTextInput,
+        isMultipleResponse,
+        answers: []
+      },
+    });
+    navigation.navigate('PreviousPollsScreen');
+  };
+
+  // * return logic *
+  const renderMethod = () => (
+    <>
+      <Styled.HeaderContainer>
+        <Styled.IconPoll />
+        <Styled.Title>{t('mobileSdk.poll.createLabel')}</Styled.Title>
+      </Styled.HeaderContainer>
+      <Styled.TextInput
+        label={t('app.poll.question.label')}
+        numberOfLines={4}
+        multiline
+        onChangeText={(text) => setQuestionTextInput(text)}
+      />
+      <Styled.ButtonsContainer>
+        <Styled.AnswerTitle>{t('app.poll.responseTypes.label')}</Styled.AnswerTitle>
+        <Styled.OptionsButton
+          selected={answerTypeSelected === 'TF'}
+          onPress={() => {
+            setAnswerTypeSelected('TF');
+          }}
+        >
+          {t('app.poll.tf')}
+        </Styled.OptionsButton>
+        <Styled.OptionsButton
+          selected={answerTypeSelected === 'A-4'}
+          onPress={() => {
+            setAnswerTypeSelected('A-4');
+          }}
+        >
+          {t('app.poll.a4')}
+        </Styled.OptionsButton>
+        <Styled.OptionsButton
+          selected={answerTypeSelected === 'YNA'}
+          onPress={() => {
+            setAnswerTypeSelected('YNA');
+          }}
+        >
+          {t('app.poll.yna')}
+        </Styled.OptionsButton>
+        <Styled.OptionsButton
+          selected={answerTypeSelected === 'R-'}
+          onPress={() => {
+            setAnswerTypeSelected('R-');
+          }}
+        >
+          {t('app.poll.userResponse.label')}
+        </Styled.OptionsButton>
+      </Styled.ButtonsContainer>
+      <Styled.AnswerTitle>
+        {t('mobileSdk.poll.createPoll.responseOptions')}
+      </Styled.AnswerTitle>
+      <Styled.ToggleOptionsLabel
+        value={isMultipleResponse}
+        onValueChange={(val) => setIsMultipleResponse(val)}
+      >
+        {t('mobileSdk.poll.createPoll.allowMultipleResponse')}
+      </Styled.ToggleOptionsLabel>
+      <Styled.ToggleOptionsLabel
+        value={secretPoll}
+        onValueChange={(val) => {
+          dispatch(editSecretPoll(val));
+          setSecretPoll(val);
+        }}
+        enableText={t('mobileSdk.poll.createPoll.anonymousPollSubtitle')}
+      >
+        {t('mobileSdk.poll.createPoll.anonymousPoll')}
+      </Styled.ToggleOptionsLabel>
+      <Styled.ConfirmButton
+        onPress={handleCreatePoll}
+      >
+        {t('app.poll.start.label')}
+      </Styled.ConfirmButton>
+      <Styled.SeePublishPollsButton
+        onPress={() => navigation.navigate('PreviousPollsScreen')}
+      >
+        {t('mobileSdk.poll.previousPolls.label')}
+      </Styled.SeePublishPollsButton>
+    </>
+  );
+
+  return (
+    <ScreenWrapper>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Styled.ContainerView>
+          <Styled.ContainerPollCard>
+            <Styled.ContainerViewPadding onPress={() => dispatch(trigDetailedInfo())}>
+              {renderMethod()}
+            </Styled.ContainerViewPadding>
+          </Styled.ContainerPollCard>
+        </Styled.ContainerView>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
+  );
+};
+
+export default CreatePoll;
